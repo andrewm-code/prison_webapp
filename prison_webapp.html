@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One-Sentence Prison</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 14px;
+            background-color: #ffffff;
+            color: #000000;
+            margin: 20px;
+            line-height: 1.4;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+            color: #000080;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        table {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            background-color: #f0f0f0;
+            gap: 20px;
+        }
+
+        .finish-btn {
+            background-color: #cccccc;
+            border: 2px outset #cccccc;
+            padding: 6px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .finish-btn:active {
+            border: 2px inset #cccccc;
+        }
+
+        .reset-btn {
+            background-color: #ffcccc;
+            border: 2px outset #ffcccc;
+            padding: 6px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .reset-btn:active {
+            border: 2px inset #ffcccc;
+        }
+
+        .completed-sentences {
+            min-height: 150px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px inset #cccccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+            margin-bottom: 10px;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 14px;
+        }
+
+        .sentence {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 3px;
+            transition: opacity 0.3s ease;
+        }
+
+        .sentence.visible {
+            opacity: 1;
+            background-color: #ffffff;
+        }
+
+        .sentence.faded {
+            opacity: 0.2;
+            background-color: #f0f0f0;
+        }
+
+        .sentence.current {
+            opacity: 1;
+            background-color: #ffffcc;
+            border: 1px solid #ffcc00;
+        }
+
+        #currentSentence {
+            width: 100%;
+            height: 80px;
+            border: 2px inset #cccccc;
+            padding: 10px;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 16px;
+            background-color: #ffffff;
+            resize: none;
+        }
+
+        #currentSentence:focus {
+            background-color: #ffffcc;
+            outline: none;
+        }
+
+        .stats {
+            margin-top: 10px;
+            padding: 5px;
+            border: 1px solid #cccccc;
+            background-color: #f8f8f8;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .instructions {
+            background-color: #e6f3ff;
+            border: 1px solid #99ccff;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        hr {
+            margin: 20px 0;
+            border: 0;
+            border-top: 1px solid #cccccc;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #666666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>One-Sentence Prison</h1>
+    <p class="subtitle">"Every sentence is a step forward, no looking back."</p>
+    
+    <table>
+        <tr>
+            <td>
+                <div class="instructions">
+                    <strong>Rules:</strong> Write one sentence at a time. Type a period followed by a space to complete a sentence. 
+                    You can only see your most recent sentence until you click "Finish". No editing completed sentences!
+                </div>
+
+                <div class="controls">
+                    <button class="finish-btn" onclick="finishWriting()">Finish & Reveal All</button>
+                    <button class="reset-btn" onclick="resetEverything()">Reset</button>
+                </div>
+
+                <div class="completed-sentences" id="completedSentences">
+                    <em style="color: #999;">Your completed sentences will appear here...</em>
+                </div>
+                
+                <textarea 
+                    id="currentSentence" 
+                    placeholder="Start writing your sentence here..."
+                ></textarea>
+                
+                <div class="stats" id="stats">
+                    Sentences completed: <strong id="sentenceCount">0</strong> | 
+                    Total words: <strong id="wordCount">0</strong> | 
+                    Current sentence words: <strong id="currentWords">0</strong>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <hr>
+    <div class="footer">
+        <em>Focus on one sentence at a time.</em>
+    </div>
+
+    <script>
+        var currentSentenceInput = document.getElementById('currentSentence');
+        var completedSentencesDiv = document.getElementById('completedSentences');
+        var sentenceCountSpan = document.getElementById('sentenceCount');
+        var wordCountSpan = document.getElementById('wordCount');
+        var currentWordsSpan = document.getElementById('currentWords');
+        
+        var completedSentences = [];
+        var isFinished = false;
+        var totalWords = 0;
+
+        function updateStats() {
+            var currentText = currentSentenceInput.value.trim();
+            var currentWordCount = currentText === '' ? 0 : currentText.split(/\s+/).length;
+            
+            sentenceCountSpan.textContent = completedSentences.length;
+            wordCountSpan.textContent = totalWords + currentWordCount;
+            currentWordsSpan.textContent = currentWordCount;
+        }
+
+        function displaySentences() {
+            if (completedSentences.length === 0) {
+                completedSentencesDiv.innerHTML = '<em style="color: #999;">Your completed sentences will appear here...</em>';
+                return;
+            }
+
+            var html = '';
+            completedSentences.forEach(function(sentence, index) {
+                var cssClass = 'sentence ';
+                if (isFinished) {
+                    cssClass += 'visible';
+                } else {
+                    // In typewriter mode: only show the most recent sentence clearly
+                    if (index === completedSentences.length - 1) {
+                        cssClass += 'current';
+                    } else {
+                        cssClass += 'faded';
+                    }
+                }
+                html += '<div class="' + cssClass + '">' + (index + 1) + '. ' + sentence + '</div>';
+            });
+            
+            completedSentencesDiv.innerHTML = html;
+            // Scroll to bottom to show most recent sentence
+            completedSentencesDiv.scrollTop = completedSentencesDiv.scrollHeight;
+        }
+
+        function completeSentence() {
+            var text = currentSentenceInput.value.trim();
+            if (text.length > 0) {
+                // Remove the period and space at the end since we detected them
+                var sentence = text.replace(/\.\s*$/, '').trim() + '.';
+                completedSentences.push(sentence);
+                
+                // Update total word count
+                var wordsInSentence = sentence.split(/\s+/).length;
+                totalWords += wordsInSentence;
+                
+                // Clear current input
+                currentSentenceInput.value = '';
+                
+                // Update display
+                displaySentences();
+                updateStats();
+                
+                // Focus back on input
+                currentSentenceInput.focus();
+            }
+        }
+
+        function finishWriting() {
+            // If there's text in the current sentence that doesn't end with period+space, complete it
+            var currentText = currentSentenceInput.value.trim();
+            if (currentText.length > 0 && !currentText.match(/\.\s*$/)) {
+                var sentence = currentText + (currentText.endsWith('.') ? '' : '.');
+                completedSentences.push(sentence);
+                var wordsInSentence = sentence.split(/\s+/).length;
+                totalWords += wordsInSentence;
+                currentSentenceInput.value = '';
+            }
+            
+            isFinished = true;
+            displaySentences();
+            updateStats();
+            currentSentenceInput.disabled = true;
+            currentSentenceInput.placeholder = "Writing session completed. Click Reset to start over.";
+        }
+
+        function resetEverything() {
+            if (completedSentences.length > 0 || currentSentenceInput.value.trim().length > 0) {
+                if (!confirm('Clear all sentences and start over?')) {
+                    return;
+                }
+            }
+            
+            completedSentences = [];
+            totalWords = 0;
+            isFinished = false;
+            currentSentenceInput.disabled = false;
+            currentSentenceInput.value = '';
+            currentSentenceInput.placeholder = "Start writing your sentence here...";
+            displaySentences();
+            updateStats();
+            currentSentenceInput.focus();
+        }
+
+        // Event listeners
+        currentSentenceInput.addEventListener('input', function() {
+            var text = this.value;
+            updateStats();
+            
+            // Check if user typed period followed by space
+            if (text.match(/\.\s$/)) {
+                completeSentence();
+            }
+        });
+
+        // Prevent backspacing into completed sentences
+        currentSentenceInput.addEventListener('keydown', function(e) {
+            updateStats();
+        });
+
+        // Initialize
+        updateStats();
+        currentSentenceInput.focus();
+    </script>
+</body>
+</html>
