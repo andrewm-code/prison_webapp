@@ -12,6 +12,8 @@
             color: #000000;
             margin: 20px;
             line-height: 1.4;
+            position: relative;
+            overflow-x: hidden;
         }
 
         h1 {
@@ -34,6 +36,8 @@
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
+            position: relative;
+            z-index: 10;
         }
 
         .section {
@@ -224,6 +228,58 @@
             opacity: 1;
         }
 
+        /* Confetti Animation */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #ff6b6b;
+            animation: confetti-fall 3s linear forwards;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .confetti:nth-child(odd) {
+            background-color: #4ecdc4;
+            animation-delay: -0.5s;
+        }
+
+        .confetti:nth-child(3n) {
+            background-color: #45b7d1;
+            animation-delay: -1s;
+        }
+
+        .confetti:nth-child(4n) {
+            background-color: #f9ca24;
+            animation-delay: -1.5s;
+        }
+
+        .confetti:nth-child(5n) {
+            background-color: #f0932b;
+            animation-delay: -2s;
+        }
+
+        .confetti:nth-child(6n) {
+            background-color: #eb4d4b;
+            animation-delay: -2.5s;
+        }
+
+        .confetti:nth-child(7n) {
+            background-color: #6c5ce7;
+            animation-delay: -1.2s;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
         hr {
             margin: 25px 0;
             border: 0;
@@ -321,6 +377,38 @@
         var sessionStartTime = Date.now();
         var timerInterval = null;
         var soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+        var goalAchieved = false; // Track if goal has been achieved
+
+        // Confetti celebration
+        function createConfetti() {
+            var colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7'];
+            var confettiCount = 150;
+            
+            for (var i = 0; i < confettiCount; i++) {
+                var confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = (Math.random() * 3) + 's';
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                
+                // Randomize confetti shapes
+                if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '50%';
+                } else {
+                    confetti.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+                }
+                
+                document.body.appendChild(confetti);
+                
+                // Remove confetti after animation
+                setTimeout(function(element) {
+                    if (element && element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                }, 5000, confetti);
+            }
+        }
 
         // Calculate progressive opacity for sentences
         function calculateOpacity(index, totalSentences) {
@@ -372,8 +460,12 @@
             var wordGoal = parseInt(document.getElementById('wordGoal').value) || 100;
             var timeGoal = parseInt(document.getElementById('timeGoal').value) || 15;
             
+            var currentText = currentSentenceInput.value.trim();
+            var currentWordCount = currentText === '' ? 0 : currentText.split(/\s+/).length;
+            var totalCurrentWords = totalWords + currentWordCount;
+            
             var sentenceProgress = (completedSentences.length / sentenceGoal) * 100;
-            var wordProgress = (totalWords / wordGoal) * 100;
+            var wordProgress = (totalCurrentWords / wordGoal) * 100;
             var timeElapsed = Math.floor((Date.now() - sessionStartTime) / 60000);
             var timeProgress = (timeElapsed / timeGoal) * 100;
             
@@ -382,9 +474,12 @@
             progressFill.style.width = overallProgress + '%';
             progressText.textContent = Math.round(overallProgress) + '%';
             
-            if (overallProgress >= 100 && !isFinished) {
-                showNotification('🎉 Congratulations! You\'ve reached your goals!');
+            // Check if goals are achieved for the first time
+            if (overallProgress >= 100 && !isFinished && !goalAchieved) {
+                goalAchieved = true;
+                createConfetti();
                 playSound('success');
+                showNotification('🎉 Congratulations! You\'ve reached your goals!');
             }
         }
 
@@ -434,6 +529,7 @@
                 totalWords: totalWords,
                 startTime: sessionStartTime,
                 currentSentence: currentSentenceInput.value,
+                goalAchieved: goalAchieved,
                 timestamp: Date.now()
             };
             localStorage.setItem('sentencePrisonSession', JSON.stringify(sessionData));
@@ -447,6 +543,7 @@
                 completedSentences = sessionData.sentences || [];
                 totalWords = sessionData.totalWords || 0;
                 sessionStartTime = sessionData.startTime || Date.now();
+                goalAchieved = sessionData.goalAchieved || false;
                 currentSentenceInput.value = sessionData.currentSentence || '';
                 
                 displaySentences();
@@ -503,6 +600,22 @@
                 showNotification('Text copied to clipboard!');
             });
         }
+
+        // Reset goal achievement when goals change
+        document.getElementById('sentenceGoal').addEventListener('change', function() {
+            goalAchieved = false;
+            updateProgress();
+        });
+
+        document.getElementById('wordGoal').addEventListener('change', function() {
+            goalAchieved = false;
+            updateProgress();
+        });
+
+        document.getElementById('timeGoal').addEventListener('change', function() {
+            goalAchieved = false;
+            updateProgress();
+        });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
