@@ -84,29 +84,25 @@
             margin-bottom: 10px;
             font-family: 'Comic Sans MS', cursive;
             font-size: 14px;
+            line-height: 1.6;
         }
 
-        .sentence {
-            margin-bottom: 8px;
-            padding: 5px;
-            border-radius: 3px;
+        .text-block {
             transition: opacity 0.3s ease;
         }
 
-        .sentence.visible {
+        .text-block.visible {
             opacity: 1;
-            background-color: #ffffff;
         }
 
-        .sentence.faded {
+        .text-block.typewriter-mode {
             opacity: 0.2;
-            background-color: #f0f0f0;
         }
 
-        .sentence.current {
-            opacity: 1;
+        .current-sentence {
             background-color: #ffffcc;
-            border: 1px solid #ffcc00;
+            padding: 2px 4px;
+            border-radius: 3px;
         }
 
         #currentSentence {
@@ -224,23 +220,29 @@
             }
 
             var html = '';
-            completedSentences.forEach(function(sentence, index) {
-                var cssClass = 'sentence ';
-                if (isFinished) {
-                    cssClass += 'visible';
+            if (isFinished) {
+                // Show all sentences as one flowing text block
+                html = '<div class="text-block visible">' + completedSentences.join(' ') + '</div>';
+            } else {
+                // Typewriter mode: show previous sentences faded, current sentence highlighted
+                if (completedSentences.length === 1) {
+                    // Only one sentence, highlight it
+                    html = '<div class="text-block visible"><span class="current-sentence">' + completedSentences[0] + '</span></div>';
                 } else {
-                    // In typewriter mode: only show the most recent sentence clearly
-                    if (index === completedSentences.length - 1) {
-                        cssClass += 'current';
-                    } else {
-                        cssClass += 'faded';
+                    // Multiple sentences: fade older ones, highlight most recent
+                    var olderSentences = completedSentences.slice(0, -1).join(' ');
+                    var currentSentence = completedSentences[completedSentences.length - 1];
+                    
+                    html = '<div class="text-block typewriter-mode">' + olderSentences + '</div>';
+                    if (olderSentences.length > 0) {
+                        html += ' ';
                     }
+                    html += '<div class="text-block visible"><span class="current-sentence">' + currentSentence + '</span></div>';
                 }
-                html += '<div class="' + cssClass + '">' + sentence + '</div>';
-            });
+            }
             
             completedSentencesDiv.innerHTML = html;
-            // Scroll to bottom to show most recent sentence
+            // Scroll to bottom to show most recent content
             completedSentencesDiv.scrollTop = completedSentencesDiv.scrollHeight;
         }
 
